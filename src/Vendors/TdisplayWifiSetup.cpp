@@ -25,11 +25,12 @@ const uint8_t LONG_PRESS_MIN_SHTDWN = 30;
 const uint8_t TDISPLAY_BTN_UP = 0;
 const uint8_t TDISPLAY_BTN_DOWN = 14;
 const uint8_t X_START_ALL = 10;
-const uint8_t Y_START_KBD = 28;
+const uint8_t Y_START_KBD = 30;
 const uint8_t X_STEP_KBD = 10;
 const uint8_t Y_STEP_KBD = 14;
-const uint8_t Y_START_PWD = 100;
-const uint8_t Y_START_HLP = 135;
+const uint8_t Y_START_PWD = Y_START_KBD + 65;
+const uint8_t X_START_HLP = 1;
+const uint8_t Y_START_HLP = 120;
 
 
 uint8_t checkLongPress(){
@@ -56,26 +57,6 @@ uint8_t readButtons(){
     return( down + up + longPress);
 }
 
-void shutdownToDeepSleep() {
-    if (!g_tft) return;
-    auto& tft = *g_tft;
-
-    tft.fillScreen(TFT_BLACK);
-    tft.setCursor(40, 60);
-    tft.setTextColor(TFT_WHITE);
-    tft.setTextFont(2);
-    int16_t x1, y1;
-    uint16_t w, h;
-    std::string text = "Shutting down...";
-    tft.setTextDatum(MC_DATUM);
-    tft.drawString(text.c_str(), tft.width() / 2, 80);
-    // Shutdown
-    delay(3000);
-    esp_sleep_enable_ext0_wakeup((gpio_num_t)TDISPLAY_BTN_DOWN, 0);
-    esp_deep_sleep_start();
-}
-
-
 void tick() {
 
     int buttons = readButtons();
@@ -88,8 +69,6 @@ void tick() {
             lastInput = KEY_OK;
         } else if (buttons == (BTN_DOWN + BTN_LONG)) {
             lastInput = KEY_ARROW_DOWN;
-        } else if (buttons && BTN_SHUT){
-            shutdownToDeepSleep();
         }
         lastButton = buttons;
     }
@@ -179,8 +158,14 @@ String selectWifiNetwork() {
     tft.setTextFont(1);
     tft.drawString("Select Wi-Fi:", 10, 10);
 
+    tft.setTextFont(2);
+    tft.setTextSize(1);
+    tft.setTextColor(HELP_COLOR, TFT_BLACK);
+    tft.drawString("Short press any button to change SSID", 10, tft.height() - 35);
+    tft.drawString("Long press top button to accept", 10, tft.height() - 20);
+
     while (true) {
-        tft.fillRect(0, 40, tft.width(), tft.height() - 40, TFT_BLACK);
+        tft.fillRect(0, 40, tft.width(), tft.height() - 80, TFT_BLACK);
         
         tft.setTextSize(1);
         tft.setTextFont(1);
@@ -225,12 +210,15 @@ String enterText(const String& label) {
     tft.setTextFont(1);
     tft.drawString(label, 10, 10);
     
-    tft.setTextSize(1);
-    tft.drawString("Top Button press: short = next, long = select", X_START_ALL, Y_START_HLP);
-    tft.drawString("Bottom Button press: short = prev, long = next line", X_START_ALL, Y_START_HLP + 12);
-    tft.drawString("[<-] : delete a char. [OK] Enter", X_START_ALL, Y_START_HLP + 24);
-    // draw charset on screen
+    tft.setTextColor(HELP_COLOR);
     tft.setTextFont(2);
+    tft.setTextSize(1);
+    tft.drawString("Top Button press:    short = next, long = select", X_START_HLP, Y_START_HLP);
+    tft.drawString("Bottom Button press: short = prev, long = next line", X_START_HLP, Y_START_HLP + 14);
+    tft.drawString("[<-] : delete a char. [OK] Enter", X_START_HLP, Y_START_HLP + 28);
+
+    // draw charset on screen
+    tft.setTextColor(TFT_GREEN);
     int nbChar = charset.length();
     for(int i = 0, line = 0; i < nbChar; i++){
         if((i>0) && (i%26 == 0)){line++;}
@@ -258,15 +246,9 @@ String enterText(const String& label) {
         String charDisplay = (currentChar == '\x08' || currentChar == '\x0D')
                              ? "[" + alias + "]"
                              : alias;
-        //String display = text + charDisplay;
-
-        //tft.fillRect(0, 90, tft.width(), tft.height() - 120, TFT_BLACK);
-
+ 
         tft.setTextSize(1);
         tft.setTextFont(2);
-//        tft.setTextFont(1);
-//        tft.setTextColor(TFT_LIGHTGREY);
-//        tft.drawString(display, 10, 110);
 
         tft.setTextColor(TFT_GREEN);
         if (lastIndex == nbChar - 1){
@@ -317,7 +299,7 @@ String enterText(const String& label) {
                 text += currentChar;
             }
             tft.fillRect(0,Y_START_PWD - 2, tft.width(), 25, TFT_BLACK);
-            tft.setTextColor(TFT_LIGHTGREY);
+            //tft.setTextColor(TFT_LIGHTGREY);
             tft.drawString(text, X_START_ALL, Y_START_PWD);
         }
     }

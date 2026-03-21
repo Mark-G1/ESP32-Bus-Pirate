@@ -11,6 +11,7 @@
 #define NVS_PASS_KEY "pass"
 
 #define DARK_GREY 0x4208
+#define HELP_COLOR 0xC618
 
 bool setupTdisplayWifi(IDeviceView& view);
 
