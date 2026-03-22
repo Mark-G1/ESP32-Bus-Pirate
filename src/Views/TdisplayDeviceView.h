@@ -12,6 +12,7 @@
 #define PIN_LCD_BL 38
 #define PIN_POWER_ON 46
 #define DARK_GREY_RECT 0x4208
+#define HELP_COLOR 0xC618
 
 // Lovyan driver
 class LGFX_Tdisplay : public lgfx::LGFX_Device {
