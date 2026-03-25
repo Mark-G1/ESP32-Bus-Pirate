@@ -1000,10 +1000,9 @@ void UartController::handleTrigger(const TerminalCommand& cmd) {
 
 
 /*
-    sniff exchanges on a serial communication
+Sniff exchanges on a serial communication
 */
 void UartController::handleSniff() {
-    GlobalState& state = GlobalState::getInstance();
     enum source {NONE, UART1, UART2};
 
     const unsigned long baud = state.getUartBaudRate();
@@ -1026,13 +1025,13 @@ void UartController::handleSniff() {
         return;
     }
 
-    terminalView.println("UART Sniff: press ENTER to stop");
+    terminalView.println("UART Sniff: Monitoring both lines... Press [ENTER] to stop");
 
     UartService uart1;
     UartService uart2;
 
-    uart1.configure(baud, config, rxPin1, noTxPin, inverted, &Serial1, false);
-    uart2.configure(baud, config, rxPin2, noTxPin, inverted, &Serial2, false);
+    uart1.configure(baud, config, rxPin1, noTxPin, inverted, &Serial1, true);
+    uart2.configure(baud, config, rxPin2, noTxPin, inverted, &Serial2, true);
  
     uart1.flush();
     uart2.flush();
@@ -1042,7 +1041,7 @@ void UartController::handleSniff() {
     while (true) {
         char key = terminalInput.readChar();
         if (key == '\r' || key == '\n') {
-            terminalView.println("\nUART Sniff: stopped");
+            terminalView.println("\nUART Sniff: Stopped by user.");
             break;
         }
 

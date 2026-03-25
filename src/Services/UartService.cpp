@@ -35,14 +35,14 @@ void UartService::configure(unsigned long baud,
                             uint8_t tx,
                             bool inverted,
                             HardwareSerial* serial,
-                            bool noBuffer) {
+                            bool noAllocation) {
 
     _serial = serial;
 
     _serial->end();
     _serial->begin(baud, config, rx, tx, inverted);
 
-    if (noBuffer) {
+    if (noAllocation) {
         return;
     }
 

@@ -144,6 +144,7 @@ void HelpShell::cmdUart() {
         "scan                 - Scan UART lines activity",
         "autobaud             - Detect baud rate on RX",
         "ping                 - Send and expect reply",
+        "sniff                - Monitor UART traffic",
         "read                 - Receive ascii data",
         "raw                  - Receive raw hex data",
         "write [text]         - Send at current baud",
@@ -156,7 +157,6 @@ void HelpShell::cmdUart() {
         "xmodem <recv> <path> - Receive file via XMODEM",
         "config               - Configure settings",
         "swap                 - Swap RX and TX GPIOs",
-        "sniff                - View traffic on an UART",
         "['Hello'] [r:64]...  - Instruction syntax"
     };
     printLines(lines, (int)(sizeof(lines) / sizeof(lines[0])));
