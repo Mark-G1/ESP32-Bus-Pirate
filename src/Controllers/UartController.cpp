@@ -53,6 +53,7 @@ void UartController::handleCommand(const TerminalCommand& cmd) {
     else if (cmd.getRoot() == "glitch") handleGlitch();
     else if (cmd.getRoot() == "xmodem") handleXmodem(cmd);
     else if (cmd.getRoot() == "swap") handleSwap();
+    else if (cmd.getRoot() == "sniff") handleSniff();
     else if (cmd.getRoot() == "config") handleConfig();
     else handleHelp();
 }
@@ -996,6 +997,80 @@ void UartController::handleTrigger(const TerminalCommand& cmd) {
         }
     }
 }
+
+
+/*
+    sniff exchanges on a serial communication
+*/
+void UartController::handleSniff() {
+    GlobalState& state = GlobalState::getInstance();
+    enum source {NONE, UART1, UART2};
+
+    const unsigned long baud = state.getUartBaudRate();
+    const uint32_t config = state.getUartConfig();
+    const bool inverted = state.isUartInverted();
+
+    const uint8_t rxPin1 = state.getUartRxPin();
+    const uint8_t rxPin2 = state.getUartTxPin();
+    const int8_t noTxPin = -1;
+
+    int lastUart = NONE;
+
+    if (rxPin1 == rxPin2) {
+        terminalView.println("UART Sniff: RX and TX pins are identical.");
+        return;
+    }
+
+    if (state.isPinProtected(rxPin1) || state.isPinProtected(rxPin2)) {
+        terminalView.println("UART Sniff: protected pin.");
+        return;
+    }
+
+    terminalView.println("UART Sniff: press ENTER to stop");
+
+    UartService uart1;
+    UartService uart2;
+
+    uart1.configure(baud, config, rxPin1, noTxPin, inverted, &Serial1, false);
+    uart2.configure(baud, config, rxPin2, noTxPin, inverted, &Serial2, false);
+ 
+    uart1.flush();
+    uart2.flush();
+    while (uart1.available()) {uart1.read();}
+    while (uart2.available()) {uart2.read();}
+
+    while (true) {
+        char key = terminalInput.readChar();
+        if (key == '\r' || key == '\n') {
+            terminalView.println("\nUART Sniff: stopped");
+            break;
+        }
+
+       if (uart1.available() > 0) {
+            if (lastUart != UART1){
+                terminalView.print("\n\r\t[RX] ");
+                lastUart = UART1;
+            }
+            terminalView.print(std::string(1, uart1.read()));
+        }
+
+        if (uart2.available() > 0) {
+            if (lastUart != UART2){
+                terminalView.print("\n\r[TX] ");
+                lastUart = UART2;
+            }
+            terminalView.print(std::string(1, uart2.read()));
+        }
+
+        yield();
+    }
+
+    uart1.end();
+    uart2.end();
+
+    ensureConfigured();
+}
+
 
 /*
 Ensure Config

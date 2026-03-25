@@ -97,6 +97,9 @@ private:
 
     // Handle trigger setup to send response on pattern match
     void handleTrigger(const TerminalCommand& cmd);
+
+    // sniff on a serial communication
+    void handleSniff();
     
     ITerminalView& terminalView;
     IDeviceView& deviceView;

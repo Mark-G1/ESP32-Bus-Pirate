@@ -1,5 +1,6 @@
 #include "UartService.h"
 
+/*
 void UartService::configure(unsigned long baud, uint32_t config, uint8_t rx, uint8_t tx, bool inverted) {
     Serial1.end();
     Serial1.begin(baud, config, rx, tx, inverted);
@@ -26,9 +27,50 @@ void UartService::configure(unsigned long baud, uint32_t config, uint8_t rx, uin
         buffersAllocated = true;
     }
 }
+*/
+
+void UartService::configure(unsigned long baud,
+                            uint32_t config,
+                            uint8_t rx,
+                            uint8_t tx,
+                            bool inverted,
+                            HardwareSerial* serial,
+                            bool noBuffer) {
+
+    _serial = serial;
+
+    _serial->end();
+    _serial->begin(baud, config, rx, tx, inverted);
+
+    if (noBuffer) {
+        return;
+    }
+
+    if (!buffersAllocated) {
+
+        edgeIntervals = (uint32_t*) heap_caps_malloc(
+            sizeof(uint32_t) * 50,
+            MALLOC_CAP_INTERNAL
+        );
+
+        edgeCounts = (uint32_t*) heap_caps_malloc(
+            sizeof(uint32_t) * 64,
+            MALLOC_CAP_INTERNAL
+        );
+
+        if (!edgeIntervals || !edgeCounts) {
+            buffersAllocated = false;
+            return;
+        }
+
+        memset((void*)edgeCounts, 0, sizeof(uint32_t) * 64);
+
+        buffersAllocated = true;
+    }
+}
 
 void UartService::release() {
-    Serial1.end();
+    _serial->end();
 
     if (buffersAllocated) {
         heap_caps_free((void*)edgeIntervals);
@@ -40,7 +82,7 @@ void UartService::release() {
 }
 
 void UartService::end() {
-    Serial1.end();
+    _serial->end();
 }
 
 std::string UartService::readLine() {
@@ -48,19 +90,19 @@ std::string UartService::readLine() {
     bool lastWasCR = false;
 
     while (true) {
-        if (!Serial1.available()) continue;
+        if (!_serial->available()) continue;
         
-        char c = Serial1.read();
+        char c = _serial->read();
 
         if (c == '\r') {
             lastWasCR = true;
-            Serial1.println();
+            _serial->println();
             break;
         }
 
         if (c == '\n') {
             if (!lastWasCR) {
-                Serial1.println();
+                _serial->println();
                 break;
             }
             continue;
@@ -69,11 +111,11 @@ std::string UartService::readLine() {
         if (c == '\b' || c == 127) {
             if (!input.empty()) {
                 input.pop_back();
-                Serial1.print("\b \b");
+                _serial->print("\b \b");
             }
         } else {
             input += c;
-            Serial1.print(c);
+            _serial->print(c);
             lastWasCR = false;
         }
     }
@@ -82,27 +124,27 @@ std::string UartService::readLine() {
 }
 
 void UartService::print(const std::string& msg) {
-    Serial1.print(msg.c_str());
+    _serial->print(msg.c_str());
 }
 
 void UartService::println(const std::string& msg) {
-    Serial1.println(msg.c_str());
+    _serial->println(msg.c_str());
 }
 
 bool UartService::available() const {
-    return Serial1.available();
+    return _serial->available();
 }
 
 char UartService::read() {
-    return Serial1.read();
+    return _serial->read();
 }
 
 void UartService::write(char c) {
-    Serial1.write(c);
+    _serial->write(c);
 }
 
 void UartService::write(const std::string& str) {
-    Serial1.write(reinterpret_cast<const uint8_t*>(str.c_str()), str.length());
+    _serial->write(reinterpret_cast<const uint8_t*>(str.c_str()), str.length());
 }
 
 std::string UartService::executeByteCode(const std::vector<ByteCode>& bytecodes) {
@@ -115,15 +157,15 @@ std::string UartService::executeByteCode(const std::vector<ByteCode>& bytecodes)
         switch (code.getCommand()) {
             case ByteCodeEnum::Write:
                 for (uint32_t i = 0; i < code.getRepeat(); ++i) {
-                    Serial1.write(code.getData());
+                    _serial->write(code.getData());
                 }
                 break;
 
             case ByteCodeEnum::Read:
                 start = millis();
                 while (received < code.getRepeat() && (millis() - start < timeout)) {
-                    if (Serial1.available()) {
-                        char c = Serial1.read();
+                    if (_serial->available()) {
+                        char c = _serial->read();
                         result += c;
                         ++received;
                     } else {
@@ -149,11 +191,11 @@ std::string UartService::executeByteCode(const std::vector<ByteCode>& bytecodes)
 }
 
 void UartService::switchBaudrate(unsigned long newBaud) {
-    Serial1.updateBaudRate(newBaud);
+    _serial->updateBaudRate(newBaud);
 }
 
 void UartService::flush() {
-    Serial.flush();
+    _serial->flush();
 }
 
 void UartService::clearUartBuffer() {
@@ -213,7 +255,7 @@ void UartService::setXmodemSendHandler(void (*handler)(void*, size_t, byte*, siz
 }
 
 void UartService::initXmodem() {
-    xmodem.begin(Serial1, xmodemProtocol);
+    xmodem.begin(*_serial, xmodemProtocol);
     xmodem.setDataSize(xmodemBlockSize);
     xmodem.setIdSize(xmodemIdSize);
 }
