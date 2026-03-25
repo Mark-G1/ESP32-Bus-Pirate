@@ -23,7 +23,7 @@ public:
         uint32_t approxBaud;
     };
 
-    void configure(unsigned long baud, uint32_t config, uint8_t rx, uint8_t tx, bool inverted);
+    void configure(unsigned long baud, uint32_t config, uint8_t rx, uint8_t tx, bool inverted, HardwareSerial* serial = &Serial1, bool noBuffer = false);
     void release();
     void print(const std::string& msg);
     void println(const std::string& msg);
@@ -95,4 +95,5 @@ private:
     };
 
     static constexpr size_t kBaudRatesCount = sizeof(kBaudRates) / sizeof(kBaudRates[0]);
+    HardwareSerial* _serial;
 };

@@ -156,6 +156,7 @@ void HelpShell::cmdUart() {
         "xmodem <recv> <path> - Receive file via XMODEM",
         "config               - Configure settings",
         "swap                 - Swap RX and TX GPIOs",
+        "sniff                - View traffic on an UART",
         "['Hello'] [r:64]...  - Instruction syntax"
     };
     printLines(lines, (int)(sizeof(lines) / sizeof(lines[0])));
