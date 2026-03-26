@@ -217,6 +217,12 @@ void ActionDispatcher::dispatchPipelineCommands(const std::string& raw) {
     }
 
     for (const auto& cmd : cmds) {
+        // handle nested repeat commands in pipeline
+        if (provider.getCommandTransformer().isRepeatCommand(cmd.getRoot())) {
+            auto repeatCmdRaw = cmd.getRoot() + " " + cmd.getSubcommand() + " " + cmd.getArgs();
+            dispatchRepeatCommands(repeatCmdRaw);
+            continue;
+        }
         dispatchCommand(cmd);
     }
 }
