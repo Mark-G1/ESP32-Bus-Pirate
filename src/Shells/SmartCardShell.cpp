@@ -197,10 +197,16 @@ Smartcard Unlock
 */
 void SmartCardShell::cmdUnlock() {
     twoWireService.resetSmartCard();
-    terminalView.println("2WIRE Unlock: Attempting unlock procedure...");
+    terminalView.println("2WIRE Unlock: Attempting unlock procedure...\n");
 
-    // Prompt for PSC (PIN Code)
-    auto pscStr = userInputManager.readValidatedHexString("Enter PSC (PIN Code) (ex: 123456)", 3);
+    // Info block
+    terminalView.println(" [ℹ️  INFORMATION] ");
+    terminalView.println(" PSC (Programmable Security Code) is 3 bytes.");
+    terminalView.println(" Default value is usually: FF FF FF.");
+    terminalView.println(" Enter values in hexadecimal format.\n");
+
+    // Prompt for PSC 
+    auto pscStr = userInputManager.readValidatedHexString("Enter PSC (ex: FF FF FF)", 3);
     auto psc = argTransformer.parseHexList(pscStr);
 
     // Unlock
@@ -221,7 +227,7 @@ void SmartCardShell::cmdUnlock() {
 }
 
 /*
-Smartcard PSC (PIN Code)
+Smartcard PSC
 */
 void SmartCardShell::cmdPsc(const std::string& subcommand) {
     twoWireService.resetSmartCard();
@@ -236,29 +242,29 @@ void SmartCardShell::cmdPsc(const std::string& subcommand) {
         uint8_t psc[3];
         bool ok = twoWireService.getSmartCardPSC(psc);
         if (ok) {
-            terminalView.println("\nℹ️  Note: The PSC (PIN Code) can only be read if the smartcard is unlocked.");
+            terminalView.println("\nℹ️  Note: The PSC can only be read if the smartcard is unlocked.");
             std::stringstream ss;
-            ss << "🔐 Current PSC (PIN Code): ";
+            ss << "🔐 Current PSC: ";
             for (int i = 0; i < 3; ++i)
                 ss << std::hex << std::setw(2) << std::setfill('0') << (int)psc[i] << " ";
             terminalView.println(ss.str());
 
         } else {
-            terminalView.println("\n❌ Failed to read PSC (PIN Code).");
+            terminalView.println("\n❌ Failed to read PSC.");
         }
 
     // SET PSC
     } else if (arg == "set") {
-        // Prompt for PSC (PIN Code)
-        auto pscStr = userInputManager.readValidatedHexString("Enter PSC (PIN Code) (ex: 123456)", 3);
+        // Prompt for PSC
+        auto pscStr = userInputManager.readValidatedHexString("Enter PSC (ex: FF FF FF)", 3);
         auto psc = argTransformer.parseHexList(pscStr);
 
         bool ok = twoWireService.updateSmartCardPSC(psc.data());
         if (ok) {
-            terminalView.println("\n✅ PSC (PIN Code) updated successfully.");
+            terminalView.println("\n✅ PSC updated successfully.");
         } else {
-            terminalView.println("\nℹ️  Note: The PSC (PIN Code) can only be set if the smartcard is unlocked.");
-            terminalView.println("❌ Failed to update PSC (PIN Code).");
+            terminalView.println("\nℹ️  Note: The PSC can only be set if the smartcard is unlocked.");
+            terminalView.println("❌ Failed to update PSC.");
         }
     }
 }
