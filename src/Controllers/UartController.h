@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 #include <string>
 #include "HardwareSerial.h"
 #include "Models/TerminalCommand.h"
