@@ -28,30 +28,30 @@ For the MIXED mode as the data are in a buffer. The buffer must be displayed on 
 
 ## The code
 1. look if the user has sent some command to change the displaying mode or exit
-    a. if so change the mode or exit
+    1. if so change the mode or exit
 2. look if there is a char pending in Serial1 or Serial2
-    a. if so read the pending character
-    b. fill a struct with the character and UART ID
-    c. push the struct in a FIFO
+    1. if so read the pending character
+    2. fill a struct with the character and UART ID
+    3. push the struct in a FIFO
 3. Test if FIFO is not empty
-    a. if so extract the struct from the FIFO
-    b. test if this is the same UART as in the previous data
-        a. if so mark uartChanged
-    c. if in mixed mode and uart changed
-        a. display the buffer
-        b. clear the buffer
-    d. displays the data according to the active mode
-        a. if in ASCII mode, display the data as is
-        b. if in HEXA mode, format in hex and display
-        c. if in MIXED mode
-            a. put the HEX in the first part of the buffer
-            b. put the ASCII in the second part of the buffer
-            c. if buffer full
-                a. display the buffer
-                b. clear the buffer
+    1. if so extract the struct from the FIFO
+    2. test if this is the same UART as in the previous data
+        1. if so mark uartChanged
+    3. if in mixed mode and uart changed
+        1. display the buffer
+        2. clear the buffer
+    4. displays the data according to the active mode
+        1. if in ASCII mode, display the data as is
+        2. if in HEXA mode, format in hex and display
+        3. if in MIXED mode
+            1. put the HEX in the first part of the buffer
+            2. put the ASCII in the second part of the buffer
+            3. if buffer full
+                1. display the buffer
+                2. clear the buffer
 4. if in MIXED mode and no data received since TIMEOUT_MIXED time
-    a. display the buffer
-    b. clear the buffer
+    1. display the buffer
+    2. clear the buffer
 5. loop to 1.
 
 ## The problem
