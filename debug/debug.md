@@ -72,3 +72,5 @@ Screenshot of a long message
 Screenshot of a short message  
 ![screen capture 3](screenCapture3.png)
 
+If the message is cut in two pieces with a delay in between, the first part of the message is made available during the delay. This confirm that Serial is waiting for a timeout before giving access to the datas. Why???
+![screen capture 3](screenCapture3.png)
