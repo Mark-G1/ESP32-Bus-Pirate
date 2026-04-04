@@ -1,34 +1,5 @@
 #include "UartService.h"
 
-/*
-void UartService::configure(unsigned long baud, uint32_t config, uint8_t rx, uint8_t tx, bool inverted) {
-    Serial1.end();
-    Serial1.begin(baud, config, rx, tx, inverted);
-
-    if (!buffersAllocated) {
-
-        edgeIntervals = (uint32_t*) heap_caps_malloc(
-            sizeof(uint32_t) * 50,
-            MALLOC_CAP_INTERNAL
-        );
-
-        edgeCounts = (uint32_t*) heap_caps_malloc(
-            sizeof(uint32_t) * 64,
-            MALLOC_CAP_INTERNAL
-        );
-
-        if (!edgeIntervals || !edgeCounts) {
-            buffersAllocated = false;
-            return;
-        }
-
-        memset((void*)edgeCounts, 0, sizeof(uint32_t) * 64);
-
-        buffersAllocated = true;
-    }
-}
-*/
-
 void UartService::configure(unsigned long baud,
                             uint32_t config,
                             uint8_t rx,
@@ -141,6 +112,16 @@ char UartService::read() {
 
 void UartService::write(char c) {
     _serial->write(c);
+}
+
+
+void UartService::setRxFIFOFull(uint8_t fifoBytes){
+    _serial->setRxFIFOFull(fifoBytes);
+}
+
+// Not sure this method is necessary as begin() sets the default values.
+void UartService::setDefaultRxFIFOFull(){
+    _serial->setRxFIFOFull(120);
 }
 
 void UartService::write(const std::string& str) {

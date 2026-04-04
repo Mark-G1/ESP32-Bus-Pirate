@@ -53,7 +53,9 @@ void UartController::handleCommand(const TerminalCommand& cmd) {
     else if (cmd.getRoot() == "glitch") handleGlitch();
     else if (cmd.getRoot() == "xmodem") handleXmodem(cmd);
     else if (cmd.getRoot() == "swap") handleSwap();
-    else if (cmd.getRoot() == "sniff") handleSniff();
+    else if (cmd.getRoot() == "sniff") handleSniff(cmd);
+    else if (cmd.getRoot() == "snifftxt") handleSniffTxt();
+    else if (cmd.getRoot() == "sniffraw") handleSniffRaw();
     else if (cmd.getRoot() == "config") handleConfig();
     else handleHelp();
 }
@@ -1002,17 +1004,28 @@ void UartController::handleTrigger(const TerminalCommand& cmd) {
 /*
 Sniff exchanges on a serial communication
 */
-void UartController::handleSniff() {
+void UartController::handleSniff(const TerminalCommand& cmd) {
+    if (cmd.getSubcommand() == "" || cmd.getSubcommand() == "txt") {
+        handleSniffTxt();
+        return;
+    }
+    if (cmd.getSubcommand() == "raw") {
+        handleSniffRaw();
+        return;
+    }
+}
 
+
+/*
+Sniff exchanges on a serial communication mixed mode display
+*/
+void UartController::handleSniffRaw() {
     enum source {NONE, UART1, UART2};
-    enum displayMode {MIXED, ASCII, HEXA};
-    const uint8_t carPerline[] ={16, 80, 16};
     const char toHex[]={'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     source lastUart = NONE;
-    displayMode display = HEXA;
     boolean uartChanged = true;
     uint8_t carDisplayed = 0;
-    uint8_t maxCarPerLine = carPerline[display];
+    const uint8_t maxCarPerLine = 16;
     std::array<char, 81> lineBuffer;
     lineBuffer.fill(0x20); lineBuffer[80]=0; lineBuffer[48]='|';
     unsigned long lastUpdateMixed = millis();
@@ -1044,12 +1057,9 @@ void UartController::handleSniff() {
         return;
     }
 
-    terminalView.println("UART Sniff: Monitoring both lines...");
-    terminalView.println("Press a key for data to be displayed in ASCII text");
-    terminalView.println("Press h key for data to be displayed in hexadecimal");
-    terminalView.println("Press m key for data to be displayed in mixed hexadecimal and decimal");
-    terminalView.println("Beware that mixed is more ressource consuming and it can break the timing.");
-    terminalView.println("        If data are sent at a sustained rate some can be missed or displayed in the wrong order.");
+    terminalView.println("UART Sniff raw mode : Monitoring both lines...");
+    terminalView.println("Beware that sniff may not work as expected in WebUI");
+    terminalView.println("  You may experience latency and difficulty to interrupt sniff");
     terminalView.println("");
     terminalView.println("Press [ENTER] to stop");
 
@@ -1063,68 +1073,30 @@ void UartController::handleSniff() {
     uart2.flush();
     while (uart1.available()) {uart1.read();}
     while (uart2.available()) {uart2.read();}
+    uart1.setRxFIFOFull(1);
+    uart2.setRxFIFOFull(1);
 
-    // =======================================
-    pinMode(10, OUTPUT);
-    digitalWrite(10, LOW);
-    pinMode(11, OUTPUT);
-    digitalWrite(11, LOW);
-    pinMode(12, OUTPUT);
-    digitalWrite(12, LOW);
-    pinMode(13, OUTPUT);
-    digitalWrite(13, LOW);
-    // =======================================
     while (true) {
         // Manage user's input mode change or exit
         char key = terminalInput.readChar();
-        if (key != KEY_NONE){
-            if (key == '\r' || key == '\n') {
-                terminalView.println("\n\r\n\rUART Sniff: Stopped by user.");
-                break;
-            } else if (key == 'm' || key == 'M'){
-                display = MIXED;
-                maxCarPerLine = carPerline[display];
-                lastUpdateMixed = millis();
-            } else if (key == 'a' || key == 'A'){
-                display = ASCII;
-                maxCarPerLine = carPerline[display];
-            } else if (key == 'h' || key == 'H'){
-                display = HEXA;
-                maxCarPerLine = carPerline[display];
-            }
+        if (key == '\r' || key == '\n') {
+            terminalView.println("\n\r\n\rUART Sniff: Stopped by user.");
+            break;
         }
 
-        // =======================================
-        digitalWrite(12, HIGH);
-        // =======================================
-        // Manage Serial1 & 2
+       // Manage Serial1 & 2
         // read characters and push it into the FIFO
        if (uart1.available() > 0) {
-            // =======================================
-            digitalWrite(11, HIGH);
-            // =======================================
             rcv.uart = UART1;
             rcv.key =  uart1.read();
             fifo.push(rcv);
-             // =======================================
-            digitalWrite(11, LOW);
-            // =======================================
-      }
+        }
 
         if (uart2.available() > 0) {
-            // =======================================
-            digitalWrite(10, HIGH);
-            // =======================================
             rcv.uart = UART2;
             rcv.key =  uart2.read();
             fifo.push(rcv);
-            // =======================================
-            digitalWrite(10, LOW);
-            // =======================================
         }
-        // =======================================
-        digitalWrite(12, LOW);
-        // =======================================
 
         // If FIFO not empty display according to the chosen mode
         if (!fifo.empty()){
@@ -1136,7 +1108,7 @@ void UartController::handleSniff() {
                 uartChanged = true;
             }
 
-            if (display == MIXED && uartChanged && carDisplayed > 0){       // if uart changed print buffer content
+            if (uartChanged && carDisplayed > 0){       // if uart changed print buffer content
                 terminalView.print(lastUart == UART2 ? "\n\r[RX] " : "\n\r\t[TX] ");
                 terminalView.print(lineBuffer.data());
                 lineBuffer.fill(0x20); lineBuffer[80]=0; lineBuffer[48]='|';
@@ -1145,71 +1117,28 @@ void UartController::handleSniff() {
                 lastUpdateMixed = millis();
             }
 
-            // =======================================
-            digitalWrite(13, HIGH);
-            // =======================================
-            switch (display){
-                case ASCII:
-                    if (uartChanged || carDisplayed >= maxCarPerLine){
-                        terminalView.print(snd.uart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
-                        carDisplayed = 0;
-                        uartChanged = false;
-                    }
-                    if (snd.key >= ' '){        // maybe we can filter chars > 0x7f too?
-                        terminalView.print(std::string(1, snd.key));
-                    } else {
-                        terminalView.print(".");
-                    }
-                    carDisplayed++;
-                    break;
-
-                case HEXA:
-                    if (uartChanged || carDisplayed >= maxCarPerLine){
-                        terminalView.print(snd.uart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
-                        carDisplayed = 0;
-                        uartChanged = false;
-                    }
-                    char buf[8];
-                    sprintf(buf, "%02X ", snd.key);
-                    terminalView.print(buf);
-                    carDisplayed++;
-                    break;
-
-                case MIXED:
-                    lineBuffer[3 * carDisplayed] = toHex[snd.key >> 4];
-                    lineBuffer[3 * carDisplayed + 1] = toHex[snd.key & 0xF];
-                    lineBuffer[50 + carDisplayed] = (snd.key >= ' ') ? snd.key : '.';
-                    carDisplayed++;
-                    uartChanged = false;
-                    if (carDisplayed >= maxCarPerLine){
-                        terminalView.print(lastUart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
-                        terminalView.print(lineBuffer.data());
-                        lineBuffer.fill(0x20); lineBuffer[80]=0; lineBuffer[48]='|';
-                        carDisplayed = 0;
-                        lastUpdateMixed = millis();
-                    }
-                    break;
-                
+            lineBuffer[3 * carDisplayed] = toHex[snd.key >> 4];
+            lineBuffer[3 * carDisplayed + 1] = toHex[snd.key & 0xF];
+            lineBuffer[50 + carDisplayed] = (snd.key >= ' ') ? snd.key : '.';
+            carDisplayed++;
+            uartChanged = false;
+            if (carDisplayed >= maxCarPerLine){
+                terminalView.print(lastUart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
+                terminalView.print(lineBuffer.data());
+                lineBuffer.fill(0x20); lineBuffer[80]=0; lineBuffer[48]='|';
+                carDisplayed = 0;
+                lastUpdateMixed = millis();
             }
-            // =======================================
-            digitalWrite(13, LOW);
-            // =======================================
 
         }
 
-        // =======================================
-        digitalWrite(13, HIGH);
-        // =======================================
-        if ((display == MIXED) && (carDisplayed > 0) && ((millis() - lastUpdateMixed) > TIMEOUT_MIXED)){ // if mixed mode not updated since a long time
+        if ((carDisplayed > 0) && ((millis() - lastUpdateMixed) > TIMEOUT_MIXED)){ // if mixed mode not updated since a long time
             terminalView.print(lastUart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
             terminalView.print(lineBuffer.data());
             lineBuffer.fill(0x20); lineBuffer[80]=0; lineBuffer[48]='|';
             carDisplayed = 0;
             lastUpdateMixed = millis();
         }
-        // =======================================
-        digitalWrite(13, LOW);
-        // =======================================
 
         yield();
     }
@@ -1220,6 +1149,114 @@ void UartController::handleSniff() {
     ensureConfigured();
 }
 
+/*
+Sniff exchanges on a serial communication text mode display
+*/
+void UartController::handleSniffTxt() {
+    enum source {NONE, UART1, UART2};
+    source lastUart = NONE;
+    boolean uartChanged = true;
+    uint8_t carDisplayed = 0;
+    const uint8_t maxCarPerLine = 80;
+
+    struct rcvSer{
+        source uart;
+        char key;
+    };
+
+    std::queue<rcvSer> fifo;
+    rcvSer rcv, snd;
+
+    const unsigned long baud = state.getUartBaudRate();
+    const uint32_t config = state.getUartConfig();
+    const bool inverted = state.isUartInverted();
+
+    const uint8_t rxPin1 = state.getUartRxPin();
+    const uint8_t rxPin2 = state.getUartTxPin();
+    const int8_t noTxPin = -1;
+
+    if (rxPin1 == rxPin2) {
+        terminalView.println("UART Sniff: RX and TX pins are identical.");
+        return;
+    }
+
+    if (state.isPinProtected(rxPin1) || state.isPinProtected(rxPin2)) {
+        terminalView.println("UART Sniff: protected pin.");
+        return;
+    }
+
+    terminalView.println("UART Sniff text mode: Monitoring both lines...");
+    terminalView.println("Beware that sniff may not work as expected in WebUI");
+    terminalView.println("  You may experience latency and difficulty to interrupt sniff");
+    terminalView.println("");
+    terminalView.println("Press [ENTER] to stop");
+
+    UartService uart1;
+    UartService uart2;
+
+    uart1.configure(baud, config, rxPin1, noTxPin, inverted, &Serial1, true);
+    uart2.configure(baud, config, rxPin2, noTxPin, inverted, &Serial2, true);
+ 
+    uart1.flush();
+    uart2.flush();
+    while (uart1.available()) {uart1.read();}
+    while (uart2.available()) {uart2.read();}
+    uart1.setRxFIFOFull(1);
+    uart2.setRxFIFOFull(1);
+
+    while (true) {
+        char key = terminalInput.readChar();
+        if (key == '\r' || key == '\n') {
+                terminalView.println("\n\r\n\rUART Sniff: Stopped by user.");
+                break;
+        }
+
+        // Manage Serial1 & 2
+        // read characters and push it into the FIFO
+       if (uart1.available() > 0) {
+            rcv.uart = UART1;
+            rcv.key =  uart1.read();
+            fifo.push(rcv);
+      }
+
+        if (uart2.available() > 0) {
+           rcv.uart = UART2;
+            rcv.key =  uart2.read();
+            fifo.push(rcv);
+         }
+
+        // If FIFO not empty display according to the chosen mode
+        if (!fifo.empty()){
+            snd = fifo.front();
+            fifo.pop();
+            
+            if (snd.uart != lastUart){      // UART just changed
+                lastUart = snd.uart;
+                uartChanged = true;
+            }
+
+            if (uartChanged || carDisplayed >= maxCarPerLine){
+                terminalView.print(snd.uart == UART1 ? "\n\r[RX] " : "\n\r\t[TX] ");
+                carDisplayed = 0;
+                uartChanged = false;
+            }
+            if (snd.key >= ' '){
+                terminalView.print(std::string(1, snd.key));
+            } else {
+                terminalView.print(" ");
+            }
+            carDisplayed++;
+
+        }
+
+        yield();
+    }
+
+    uart1.end();
+    uart2.end();
+
+    ensureConfigured();
+}
 
 /*
 Ensure Config
