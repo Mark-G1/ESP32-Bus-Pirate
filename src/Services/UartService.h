@@ -32,7 +32,9 @@ public:
     bool available() const;
     void write(char c);
     void write(const std::string& str);
-    std::string executeByteCode(const std::vector<ByteCode>& bytecodes);
+    void setRxFIFOFull(uint8_t fifoBytes);
+    void setDefaultRxFIFOFull();
+std::string executeByteCode(const std::vector<ByteCode>& bytecodes);
     void switchBaudrate(unsigned long newBaud);
     void flush();
     void clearUartBuffer();
