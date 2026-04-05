@@ -1007,11 +1007,12 @@ Sniff exchanges on a serial communication
 void UartController::handleSniff(const TerminalCommand& cmd) {
     if (cmd.getSubcommand() == "" || cmd.getSubcommand() == "txt") {
         handleSniffTxt();
-        return;
     }
-    if (cmd.getSubcommand() == "raw") {
+    else if (cmd.getSubcommand() == "raw" || cmd.getSubcommand() == "hex") {
         handleSniffRaw();
-        return;
+    } 
+    else {
+        terminalView.println("Usage: sniff [txt|raw]");
     }
 }
 
@@ -1057,11 +1058,11 @@ void UartController::handleSniffRaw() {
         return;
     }
 
-    terminalView.println("UART Sniff raw mode : Monitoring both lines...");
-    terminalView.println("Beware that sniff may not work as expected in WebUI");
-    terminalView.println("  You may experience latency and difficulty to interrupt sniff");
-    terminalView.println("");
-    terminalView.println("Press [ENTER] to stop");
+    terminalView.println("UART Sniff Raw: Monitoring both lines... Press [ENTER] to stop\n");
+
+    terminalView.println(" [ℹ️  INFORMATION]");
+    terminalView.println(" Sniffing in WebUI may be unstable");
+    terminalView.println(" It may lag and be difficult to stop\n");
 
     UartService uart1;
     UartService uart2;
@@ -1185,11 +1186,11 @@ void UartController::handleSniffTxt() {
         return;
     }
 
-    terminalView.println("UART Sniff text mode: Monitoring both lines...");
-    terminalView.println("Beware that sniff may not work as expected in WebUI");
-    terminalView.println("  You may experience latency and difficulty to interrupt sniff");
-    terminalView.println("");
-    terminalView.println("Press [ENTER] to stop");
+    terminalView.println("UART Sniff Text: Monitoring both lines... Press [ENTER] to stop\n");
+
+    terminalView.println(" [ℹ️  INFORMATION]");
+    terminalView.println(" Sniffing in WebUI may be unstable");
+    terminalView.println(" It may lag and be difficult to stop\n");
 
     UartService uart1;
     UartService uart2;

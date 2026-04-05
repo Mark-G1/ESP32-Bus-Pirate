@@ -171,7 +171,7 @@ autobaud
 ping (send probes to detect devices)
 read
 raw
-sniff
+sniff [txt|raw]
 write [text]
 bridge
 at
