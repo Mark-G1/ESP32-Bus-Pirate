@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 #include <string>
 #include "HardwareSerial.h"
 #include "Models/TerminalCommand.h"
@@ -99,7 +100,13 @@ private:
     void handleTrigger(const TerminalCommand& cmd);
 
     // sniff on a serial communication
-    void handleSniff();
+    void handleSniff(const TerminalCommand& cmd);
+    
+    // sniff on a serial communication, text mode display
+    void handleSniffTxt();
+    
+    // sniff on a serial communication, hex and ASCCI mode display
+    void handleSniffRaw();
     
     ITerminalView& terminalView;
     IDeviceView& deviceView;
