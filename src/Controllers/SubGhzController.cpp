@@ -1033,7 +1033,7 @@ void SubGhzController::handleSend(const TerminalCommand& cmd) {
 /*
 Config CC1101
 */
-void SubGhzController::handleConfig() {
+bool SubGhzController::handleConfig() {
     terminalView.println("\nSubGHz Configuration:");
 
     auto forbidden = state.getProtectedPins();    
@@ -1070,7 +1070,9 @@ void SubGhzController::handleConfig() {
 
     // CC1101 feedback
     if (!isConfigured) {
+        configured = false;
         terminalView.println("\n ❌ Failed to detect CC1101 module. Check wiring.\n");
+        return false;
     } else {
 
         if (state.getTerminalMode() != TerminalTypeEnum::Standalone) {
@@ -1086,6 +1088,7 @@ void SubGhzController::handleConfig() {
         terminalView.println(" ✅ CC1101 module detected and configured.");
         terminalView.println(" Use 'setfrequency' or 'scan' to change frequency.\n");
         configured = true;
+        return true;
     }
 }
 
@@ -1189,18 +1192,8 @@ Ensure SubGHz is configured
 */
 void SubGhzController::ensureConfigured() {
     if (!configured) {
-        handleConfig();
-        configured = true;
-    };
-
-    uint8_t cs = state.getSubGhzCsPin();
-    uint8_t gdo0 = state.getSubGhzGdoPin();
-    uint8_t sck = state.getSubGhzSckPin();
-    uint8_t miso = state.getSubGhzMisoPin();
-    uint8_t mosi = state.getSubGhzMosiPin();
-    float freq = state.getSubGhzFrequency();
-
-    subGhzService.configure(deviceView.getSharedSpiInstance(), sck, miso, mosi, cs, gdo0, freq);
+        configured = handleConfig();
+    }
 }
 
 /*

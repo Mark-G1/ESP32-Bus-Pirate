@@ -22,20 +22,39 @@ bool SubGhzService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t 
     
     #endif
 
+    SPIClass* activeSpi = &spi;
+
     // SPI
-    spi.end();
+    activeSpi->end();
     delay(10);
-    spi.begin(sck_, miso_, mosi_, ss_);
+    activeSpi->begin(sck_, miso_, mosi_, ss_);
     
     // Initialize CC1101
-    ELECHOUSE_cc1101.setSPIinstance(&spi);
+    ELECHOUSE_cc1101.setSPIinstance(activeSpi);
+    ELECHOUSE_cc1101.setBeginEndLogic(false);
     ELECHOUSE_cc1101.setSpiPin(sck_, miso_, mosi_, ss_);
     ELECHOUSE_cc1101.setGDO0(gdo0_);
-    ELECHOUSE_cc1101.Init();
-    applyDefaultProfile();
+    if (!ELECHOUSE_cc1101.Init()) {
+        isConfigured_ = false;
+        return false;
+    }
+
+    // Allow profile setup to run immediately after a successful init.
+    isConfigured_ = true;
+    if (!applyDefaultProfile(mhz_)) {
+        isConfigured_ = false;
+        return false;
+    }
 
     // Check if CC1101 is configured
+    delay(5);
     isConfigured_ = ELECHOUSE_cc1101.getCC1101();
+    if (!isConfigured_) {
+        return false;
+    }
+
+    ELECHOUSE_cc1101.setPA(paDbm_);
+    ELECHOUSE_cc1101.SetRx(mhz_);
 
     return isConfigured_;
 }

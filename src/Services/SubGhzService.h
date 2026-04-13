@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <SPI.h>
 #include <vector>
 #include <cstdint>
 #include "freertos/FreeRTOS.h"

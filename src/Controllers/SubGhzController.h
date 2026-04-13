@@ -108,7 +108,7 @@ private:
     void handleSend(const TerminalCommand& cmd);
 
     // Configure CC1101
-    void handleConfig();
+    bool handleConfig();
 
     // Available commands
     void handleHelp();

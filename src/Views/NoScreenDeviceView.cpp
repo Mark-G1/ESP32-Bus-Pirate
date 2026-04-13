@@ -1,9 +1,10 @@
+#include <Arduino.h>
 #include "NoScreenDeviceView.h"
 
 void NoScreenDeviceView::initialize() {}
 
 SPIClass& NoScreenDeviceView::getSharedSpiInstance() {
-    return SPI;
+    return sharedSpi;
 }
 
 void* NoScreenDeviceView::getScreen() {

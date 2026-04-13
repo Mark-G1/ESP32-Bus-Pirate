@@ -34,4 +34,7 @@ public:
         uint16_t selectedIndex,
         const std::string& description1,
         const std::string& description2) override;
+
+private:
+    SPIClass sharedSpi{FSPI};
 };
