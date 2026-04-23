@@ -131,9 +131,7 @@ SPIClass* ELECHOUSE_CC1101::getSPIinstance()
 ****************************************************************/
 void ELECHOUSE_CC1101::SpiStart(void)
 {
-  //End transaction to ensure openin a new session with the right SPISettings
   digitalWrite(SS_PIN, HIGH);
-  cc_spi->endTransaction();
   if(_begin_end_logic) cc_spi->end();
   if(_begin_end_logic) cc_spi->begin(SCK_PIN,MISO_PIN,MOSI_PIN,SS_PIN);
   digitalWrite(SS_PIN, LOW);
@@ -217,6 +215,7 @@ bool ELECHOUSE_CC1101::Reset (void)
   cc_spi->transfer(CC1101_SRES);
   if(!checkMISO()) return false;
 	digitalWrite(SS_PIN, HIGH);
+  SpiEnd();
   return true;
 }
 /****************************************************************
@@ -235,15 +234,20 @@ bool ELECHOUSE_CC1101::Init(void)
     DEBUG_CC1101("CC1101: Null pointer SPI instance or Begin/end");
     _begin_end_logic=true;
     cc_spi=&_cc_spi;
-    cc_spi->begin(SCK_PIN,MISO_PIN,MOSI_PIN,SS_PIN);
-    delay(1);
-  } else { DEBUG_CC1101("CC1101: Using other instance"); }
+  } else {
+    DEBUG_CC1101("CC1101: Using other instance");
+  }
 
-  SpiStart();                   //Start SPI Transaction
+  cc_spi->end();
+  delay(1);
+  cc_spi->begin(SCK_PIN,MISO_PIN,MOSI_PIN,SS_PIN);
+  delay(1);
+
   digitalWrite(SS_PIN, HIGH);
-  if(!Reset()) return false;                      //CC1101 reset
+  if(!Reset()) {
+    return false;
+  }                     //CC1101 reset
   RegConfigSettings();          //CC1101 register config
-  SpiEnd();                     //Stops SPI Transaction
   return true;
 }
 /****************************************************************
